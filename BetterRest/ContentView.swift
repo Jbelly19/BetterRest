@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreML
 
 struct ContentView: View {
     @State private var wakeUp = defaultWakeTime
@@ -24,13 +25,12 @@ struct ContentView: View {
     }
     
     private var idealBedTime: String {
-        let model = SleepCalculator()
-        
         let components = Calendar.current.dateComponents([.hour, .minute], from: wakeUp)
         let hour = (components.hour ?? 0 ) * 60 * 60
         let minute = (components.minute ?? 0 ) * 60
         
         do {
+            let model: SleepCalculator = try SleepCalculator(configuration: MLModelConfiguration())
             let prediction = try model.prediction(wake: Double(hour + minute), estimatedSleep: sleepAmount, coffee: Double(coffeeAmount))
             let sleepTime = wakeUp - prediction.actualSleep
             
@@ -39,11 +39,10 @@ struct ContentView: View {
             
             return "Your ideal bedtime is:\n \(formatter.string(from: sleepTime))"
         } catch {
+            print(error)
             return "Sorry, there was a problem calculating your bedtime"
         }
     }
-    
-
     
     var body: some View {
         NavigationView {
@@ -79,11 +78,6 @@ struct ContentView: View {
                         .multilineTextAlignment(.center)
             }
             .navigationBarTitle("BetterRest")
-//            .navigationBarItems(trailing:
-//                                    Button(action: calculateBedTime) {
-//                                        Text("Calculate")
-//                                    }
-//            )
             .alert(isPresented: $showingAlert) {
                 Alert(title: Text(alertTitle), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
